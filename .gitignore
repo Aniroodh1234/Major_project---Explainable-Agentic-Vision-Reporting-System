@@ -1,0 +1,34 @@
+# Virtual Environments
+venv/
+env/
+.venv/
+
+# Environment Variables
+.env
+
+# Python Caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Datasets
+datasets/
+
+# Outputs (Logs, Heatmaps, JSON Reports)
+outputs/
+
+# Large Model Weights
+models/**/*.pt
+models/**/*.pth
+models/checkpoints/
+
+# IDEs and OS Files
+.vscode/
+.idea/
+.DS_Store
+logs/
+prompts/
+
+builder.txt    
+developer_notes.md
