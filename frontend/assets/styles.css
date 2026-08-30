@@ -1,0 +1,78 @@
+/* frontend/assets/styles.css */
+
+/* Premium Dark Mode Styling */
+body, .stApp {
+    background-color: #0e1117;
+    color: #fafafa;
+    font-family: 'Inter', sans-serif;
+}
+
+/* Headers */
+h1, h2, h3 {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+/* Primary Button Styling */
+.stButton > button {
+    background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+    color: white;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    padding: 0.6rem 1.2rem;
+    transition: all 0.3s ease;
+}
+
+.stButton > button:hover {
+    box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+    transform: translateY(-2px);
+    color: white;
+}
+
+/* Cards for Results */
+div[data-testid="stMetricValue"] {
+    font-size: 2rem;
+    font-weight: bold;
+    background: -webkit-linear-gradient(45deg, #4facfe, #00f2fe);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Report Text Box */
+.report-box {
+    background-color: #1e2532;
+    border-left: 4px solid #4facfe;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+/* Status Badges */
+.badge-valid {
+    background-color: rgba(46, 204, 113, 0.2);
+    color: #2ecc71;
+    padding: 0.4rem 0.8rem;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.badge-warning {
+    background-color: rgba(241, 196, 15, 0.2);
+    color: #f1c40f;
+    padding: 0.4rem 0.8rem;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+/* Image container */
+.stImage > img {
+    border-radius: 12px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
