@@ -1,4 +1,4 @@
-# 🧬 Multi-Agent Medical Image Classification System with Grad-CAM Explainability and LLM-Driven Automated Reporting
+# Multi-Agent Medical Image Classification System with Grad-CAM Explainability and LLM-Driven Automated Reporting
 
 ![Python 3.11](https://img.shields.io/badge/Python-3.11-blue.svg)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115.6-green.svg)
