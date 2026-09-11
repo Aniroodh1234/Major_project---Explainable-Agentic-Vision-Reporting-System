@@ -1,7 +1,3 @@
-"""
-Threshold checking logic for Report Evaluation.
-"""
-
 from config.llm_config import QUALITY_THRESHOLD_PERCENT
 
 class Threshold:

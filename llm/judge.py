@@ -1,7 +1,3 @@
-"""
-Single-pass LLM Judge, Feedback, and Prompt Refiner.
-"""
-
 import json
 from typing import Dict, Any, List
 

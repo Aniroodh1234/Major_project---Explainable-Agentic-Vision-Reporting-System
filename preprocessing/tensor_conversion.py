@@ -1,11 +1,3 @@
-"""
-Preprocessing module – Tensor Conversion.
-
-Converts NumPy image arrays to PyTorch tensors in the ``(C, H, W)``
-format expected by Vision Transformer models, and provides helpers
-for saving / loading tensors.
-"""
-
 from __future__ import annotations
 
 from pathlib import Path

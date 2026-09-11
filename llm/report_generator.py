@@ -1,10 +1,3 @@
-"""
-Medical Report Generation Module.
-
-Contains the System Prompt, Report Template, and logic to construct LangChain
-messages (including multi-modal image inputs) for the LLM.
-"""
-
 import base64
 from pathlib import Path
 from typing import Dict, Any, List

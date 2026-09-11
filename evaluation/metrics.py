@@ -1,7 +1,3 @@
-"""
-Data schemas for evaluation metrics.
-"""
-
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
 

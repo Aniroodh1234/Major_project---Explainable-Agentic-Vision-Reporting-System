@@ -1,21 +1,3 @@
-"""
-Agent 2 – Data Preprocessing Agent.
-
-Reads the cleaned dataset produced by Agent 1, applies the full
-preprocessing pipeline (resize → colour convert → normalize → tensor),
-and saves each image as a ``.pt`` PyTorch tensor file in
-``datasets/processed/`` preserving the class-folder hierarchy.
-
-Augmentation is **not** applied during this batch step — it is built
-into the pipeline for Agent 5 to use on-the-fly during training.
-
-Usage (from the project root)::
-
-    python -m agents.agent2_preprocessing
-
-Requires Agent 1 to have been run first (``datasets/cleaned/`` must exist).
-"""
-
 from __future__ import annotations
 
 import json
@@ -24,9 +6,6 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-# ---------------------------------------------------------------------------
-# Ensure the project root is on sys.path
-# ---------------------------------------------------------------------------
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
@@ -54,21 +33,6 @@ logger = setup_logger(__name__, log_file="agent2_preprocessing.log")
 
 
 class PreprocessingAgent:
-    """
-    Batch preprocessing agent for the medical image analysis pipeline.
-
-    Responsibilities
-    ----------------
-    1. Validate that the cleaned dataset exists.
-    2. Initialise the preprocessing pipeline in **inference** mode
-       (no augmentation — augmentation is handled on-the-fly by Agent 5).
-    3. Process every image: resize → colour → normalize → tensor.
-    4. Save each tensor as a ``.pt`` file in ``datasets/processed/``.
-    5. Log a detailed summary of the results.
-
-    The cleaned dataset is **never** modified.
-    """
-
     def __init__(self) -> None:
         """Initialise the agent with paths and pipeline from settings."""
         self.cleaned_dir: Path = CLEANED_DATASET_DIR
@@ -87,9 +51,6 @@ class PreprocessingAgent:
         self._class_distribution: dict[str, int] = {}
         self._failed_files: list[str] = []
 
-    # =====================================================================
-    #  Public API
-    # =====================================================================
 
     def run(self) -> dict:
         """
@@ -137,9 +98,6 @@ class PreprocessingAgent:
 
         return report
 
-    # =====================================================================
-    #  Private helpers
-    # =====================================================================
 
     def _validate_input(self) -> None:
         """
@@ -168,13 +126,8 @@ class PreprocessingAgent:
 
         logger.info("Input validation passed.")
 
-    # -----------------------------------------------------------------
 
     def _process_all_images(self) -> None:
-        """
-        Iterate over every class folder, preprocess each image,
-        and save the resulting tensor to ``datasets/processed/``.
-        """
         for class_name in self.expected_classes:
             class_dir = self.cleaned_dir / class_name
             output_class_dir = self.processed_dir / class_name
@@ -216,8 +169,6 @@ class PreprocessingAgent:
                 f"Class '{class_name}' done: {class_count} tensor(s) saved."
             )
 
-    # -----------------------------------------------------------------
-
     def _generate_report(self, elapsed_seconds: float) -> dict:
         """Build the preprocessing report dictionary."""
         return {
@@ -240,8 +191,6 @@ class PreprocessingAgent:
             "failed_files": self._failed_files,
         }
 
-    # -----------------------------------------------------------------
-
     def _save_report(self, report: dict) -> None:
         """Persist the preprocessing report as JSON."""
         ensure_directory_exists(self.reports_dir)
@@ -254,8 +203,6 @@ class PreprocessingAgent:
         except Exception as e:
             logger.error(f"Failed to save preprocessing report: {e}")
             raise
-
-    # -----------------------------------------------------------------
 
     def _log_summary(self, elapsed_seconds: float) -> None:
         """Print a human-readable summary of the preprocessing results."""
@@ -271,10 +218,6 @@ class PreprocessingAgent:
         logger.info(f"  Execution time       : {elapsed_seconds:.2f}s")
         logger.info("-" * 50)
 
-
-# =========================================================================
-#  Entry point
-# =========================================================================
 
 if __name__ == "__main__":
     agent = PreprocessingAgent()

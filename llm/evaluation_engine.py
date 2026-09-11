@@ -1,8 +1,3 @@
-"""
-Evaluation Engine (Agent 8 Core).
-Orchestrates the LLM Judge, Scoring, Feedback, and Prompt Refinement loops.
-"""
-
 import time
 from typing import Dict, Any, Tuple
 

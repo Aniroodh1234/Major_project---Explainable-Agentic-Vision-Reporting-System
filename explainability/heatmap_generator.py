@@ -1,10 +1,3 @@
-"""
-Module for generating and normalizing heatmaps.
-
-Handles color mapping of the raw grayscale Grad-CAM output into an RGB heatmap
-suitable for overlaying onto the original medical image.
-"""
-
 import cv2
 import numpy as np
 

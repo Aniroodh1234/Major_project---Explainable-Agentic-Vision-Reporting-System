@@ -1,10 +1,3 @@
-"""
-Medical Report Service.
-
-Orchestrates the LLMClient, ReportGenerator, and ResponseFormatter to generate
-a structured medical report from the Agent 6 prediction output.
-"""
-
 import time
 from typing import Dict, Any
 

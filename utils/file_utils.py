@@ -1,10 +1,3 @@
-"""
-File-system utility functions for the Agentic AI project.
-
-Provides helpers for directory validation, recursive file scanning,
-hidden-file detection, and safe file copying used across agents.
-"""
-
 import shutil
 from pathlib import Path
 

@@ -1,7 +1,3 @@
-"""
-Parser for the LLM Judge JSON output.
-"""
-
 import json
 from typing import Dict, Any
 

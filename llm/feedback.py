@@ -1,7 +1,3 @@
-"""
-Feedback extraction module.
-"""
-
 from typing import Dict, Any, Optional
 
 class FeedbackGenerator:

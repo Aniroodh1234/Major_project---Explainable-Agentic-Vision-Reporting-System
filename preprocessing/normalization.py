@@ -1,10 +1,3 @@
-"""
-Preprocessing module – Pixel Normalization.
-
-Scales pixel values from ``[0, 255]`` uint8 to ``[0, 1]`` float32 and
-applies channel-wise mean/std normalization (ImageNet defaults for ViT).
-"""
-
 from __future__ import annotations
 
 import numpy as np

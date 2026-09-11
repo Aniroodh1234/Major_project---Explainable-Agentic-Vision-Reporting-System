@@ -1,16 +1,3 @@
-"""
-Preprocessing module – Preprocessing Pipeline.
-
-Chains all preprocessing steps (resize → colour convert → normalize →
-augment → tensor) into a single, reusable pipeline class.
-
-This pipeline is used by:
-
-* **Agent 2** – batch-process cleaned images and save to ``datasets/processed/``.
-* **Agent 5** – apply on-the-fly augmentation during training.
-* **Agent 6** – preprocess a single image during inference.
-"""
-
 from __future__ import annotations
 
 import sys

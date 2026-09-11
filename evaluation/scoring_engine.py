@@ -1,7 +1,3 @@
-"""
-Scoring Engine for evaluating medical reports.
-"""
-
 from typing import Dict, Any, List
 
 class ScoringEngine:

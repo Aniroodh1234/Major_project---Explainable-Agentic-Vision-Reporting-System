@@ -1,14 +1,3 @@
-"""
-Preprocessing module – Training Augmentation.
-
-Provides configurable data augmentation transforms applied **only**
-during training to improve model generalization.
-
-All transforms operate on float32 NumPy arrays (post-normalization)
-using OpenCV and NumPy operations, so they work correctly regardless
-of the pixel value range.
-"""
-
 from __future__ import annotations
 
 import math

@@ -1,8 +1,3 @@
-"""
-FastAPI application tying together Agent 6 (Inference) and Agent 7 (Report Generation).
-Exposes a single endpoint to upload a medical image and receive a complete medical report.
-"""
-
 import sys
 import shutil
 from pathlib import Path

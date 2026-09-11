@@ -1,10 +1,3 @@
-"""
-Preprocessing module – Image Resizing.
-
-Resizes images to a uniform target dimension required by the
-Vision Transformer backbone.
-"""
-
 from __future__ import annotations
 
 import cv2

@@ -1,7 +1,3 @@
-"""
-Predefined evaluation checklist for Medical Reports.
-"""
-
 from typing import List, Dict
 
 # The 10 predefined evaluation criteria

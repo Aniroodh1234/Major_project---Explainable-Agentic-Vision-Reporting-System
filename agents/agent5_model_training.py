@@ -1,17 +1,3 @@
-"""
-Agent 5 – Vision Transformer Fine-Tuning.
-
-Loads the processed dataset (preprocessed PyTorch tensors), instantiates the
-MedicalClassifierViT, and trains it for classification. Supports dynamic class
-detection, early stopping, and metric tracking.
-
-Usage (from the project root)::
-
-    python -m agents.agent5_model_training
-
-Requires Agent 2 to have been run first (``datasets/processed/`` must exist).
-"""
-
 import json
 import os
 import sys
@@ -27,9 +13,7 @@ import torch.nn as nn
 from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, precision_score, recall_score
 from torch.utils.data import DataLoader, Dataset, random_split
 
-# ---------------------------------------------------------------------------
-# Ensure the project root is on sys.path
-# ---------------------------------------------------------------------------
+
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
@@ -90,18 +74,7 @@ class ProcessedTensorDataset(Dataset):
 
 
 class VisionTrainingAgent:
-    """
-    Agent 5: Handles Vision Transformer Fine-Tuning.
 
-    Responsibilities
-    ----------------
-    1. Validate `selected_features` consistency.
-    2. Load `processed` tensors via DataLoaders.
-    3. Initialise MedicalClassifierViT and optimizer/scheduler.
-    4. Execute training loop with early stopping.
-    5. Save best checkpoints and final model.
-    6. Export training graphs and final JSON report.
-    """
 
     def __init__(self) -> None:
         self.processed_dir: Path = PROCESSED_DATASET_DIR
@@ -170,9 +143,7 @@ class VisionTrainingAgent:
         logger.info("  VISION TRANSFORMER FINE-TUNING AGENT – Completed")
         logger.info("=" * 60)
         
-    # =====================================================================
-    #  Private helpers
-    # =====================================================================
+
         
     def _detect_classes(self) -> None:
         if not self.processed_dir.exists():
@@ -403,9 +374,6 @@ class VisionTrainingAgent:
         logger.info(f"Training report saved to {report_path}")
 
 
-# =========================================================================
-#  Entry point
-# =========================================================================
 
 if __name__ == "__main__":
     agent = VisionTrainingAgent()

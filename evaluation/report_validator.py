@@ -1,7 +1,3 @@
-"""
-High-level Validator orchestrating Scoring and Threshold checks.
-"""
-
 from typing import List, Dict, Any, Tuple
 
 from evaluation.scoring_engine import ScoringEngine

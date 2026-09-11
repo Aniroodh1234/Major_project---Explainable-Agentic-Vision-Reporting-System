@@ -1,10 +1,3 @@
-"""
-Image utility functions for the Agentic AI project.
-
-Provides helpers for image format validation, corruption detection
-(via OpenCV), and perceptual hashing for duplicate detection.
-"""
-
 import cv2
 import numpy as np
 from pathlib import Path

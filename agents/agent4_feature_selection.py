@@ -1,26 +1,9 @@
-"""
-Agent 4 – Feature Selection Agent.
-
-Validates deep feature embeddings extracted by Agent 3, ensures they are
-not corrupted (no NaNs or Infs) and have correct dimensions, and saves
-the verified features to ``datasets/selected_features/``.
-
-Usage (from the project root)::
-
-    python -m agents.agent4_feature_selection
-
-Requires Agent 3 to have been run first (``datasets/features/`` must exist).
-"""
-
 import json
 import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-# ---------------------------------------------------------------------------
-# Ensure the project root is on sys.path
-# ---------------------------------------------------------------------------
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
@@ -69,9 +52,6 @@ class FeatureSelectionAgent:
         self._metadata_map: list[dict] = []
         self._failed_files: list[dict] = []
 
-    # =====================================================================
-    #  Public API
-    # =====================================================================
 
     def run(self) -> dict:
         """
@@ -116,9 +96,6 @@ class FeatureSelectionAgent:
 
         return report
 
-    # =====================================================================
-    #  Private helpers
-    # =====================================================================
 
     def _validate_input(self) -> None:
         """
@@ -134,7 +111,7 @@ class FeatureSelectionAgent:
 
         logger.info("Input validation passed.")
 
-    # -----------------------------------------------------------------
+
 
     def _process_and_select_features(self) -> None:
         """
@@ -209,7 +186,7 @@ class FeatureSelectionAgent:
                 f"Class '{class_name}' done: {class_valid_count} valid feature(s) selected."
             )
 
-    # -----------------------------------------------------------------
+
 
     def _generate_report(self, elapsed_seconds: float) -> dict:
         """Build the feature selection report dictionary."""
@@ -228,7 +205,7 @@ class FeatureSelectionAgent:
             "removed_files_details": self._failed_files,
         }
 
-    # -----------------------------------------------------------------
+
 
     def _save_report(self, report: dict) -> None:
         """Persist the validation report and full verified metadata as JSON."""
@@ -253,7 +230,7 @@ class FeatureSelectionAgent:
         except Exception as e:
             logger.error(f"Failed to save verified metadata map: {e}")
 
-    # -----------------------------------------------------------------
+
 
     def _log_summary(self, elapsed_seconds: float) -> None:
         """Print a human-readable summary of the selection results."""
@@ -268,9 +245,6 @@ class FeatureSelectionAgent:
         logger.info("-" * 50)
 
 
-# =========================================================================
-#  Entry point
-# =========================================================================
 
 if __name__ == "__main__":
     agent = FeatureSelectionAgent()

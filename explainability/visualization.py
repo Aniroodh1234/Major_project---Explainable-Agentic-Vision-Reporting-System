@@ -1,10 +1,3 @@
-"""
-Visualization module for Explainable AI (XAI).
-
-Creates comprehensive, side-by-side graphical structures to illustrate the
-model's decision-making process based on the Grad-CAM outputs.
-"""
-
 from pathlib import Path
 
 import matplotlib.pyplot as plt

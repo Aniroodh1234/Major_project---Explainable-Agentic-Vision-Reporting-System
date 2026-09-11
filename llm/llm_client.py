@@ -1,10 +1,3 @@
-"""
-LangChain Groq Client Module.
-
-Initializes the LLM connection using langchain-groq and handles API errors,
-timeouts, and retries.
-"""
-
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_groq import ChatGroq
 from tenacity import retry, stop_after_attempt, wait_exponential

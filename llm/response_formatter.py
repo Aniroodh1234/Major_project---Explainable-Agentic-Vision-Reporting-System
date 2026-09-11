@@ -1,9 +1,3 @@
-"""
-Response formatting module.
-
-Ensures the LLM's response strictly adheres to the requested JSON schema.
-"""
-
 import json
 from typing import Dict, Any
 

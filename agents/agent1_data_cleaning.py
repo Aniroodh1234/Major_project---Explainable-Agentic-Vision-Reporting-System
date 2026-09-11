@@ -1,19 +1,3 @@
-"""
-Agent 1 – Data Cleaning Agent.
-
-Scans the raw medical image dataset, removes corrupted / unsupported /
-duplicate files, validates folder structure, and writes a clean copy
-to ``datasets/cleaned/`` while preserving the original class hierarchy.
-
-A JSON cleaning report is saved to ``outputs/reports/cleaning_report.json``.
-
-Usage (from the project root)::
-
-    python -m agents.agent1_data_cleaning
-
-The raw dataset is **never** modified.
-"""
-
 from __future__ import annotations
 
 import json
@@ -22,10 +6,6 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-# ---------------------------------------------------------------------------
-# Ensure the project root is on sys.path so that config / utils are importable
-# regardless of how the script is invoked.
-# ---------------------------------------------------------------------------
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
@@ -53,22 +33,6 @@ logger = setup_logger(__name__, log_file="agent1_data_cleaning.log")
 
 
 class DataCleaningAgent:
-    """
-    Reusable Data Cleaning Agent for the medical image analysis pipeline.
-
-    Responsibilities
-    ----------------
-    1. Validate the expected folder structure.
-    2. Scan the raw dataset recursively.
-    3. Ignore hidden files.
-    4. Detect and flag unsupported image formats.
-    5. Detect and flag corrupted images (cannot be opened by OpenCV).
-    6. Detect and remove duplicate images via perceptual hashing.
-    7. Copy valid, unique images to ``datasets/cleaned/``.
-    8. Generate a JSON cleaning report.
-
-    The raw dataset is **never** overwritten or modified.
-    """
 
     def __init__(self) -> None:
         """Initialise the agent with paths and counters from settings."""
@@ -95,9 +59,6 @@ class DataCleaningAgent:
         self._unsupported_files_list: list[str] = []
         self._duplicate_files_removed_list: list[str] = []
 
-    # =====================================================================
-    #  Public API
-    # =====================================================================
 
     def run(self) -> dict:
         """
@@ -154,9 +115,6 @@ class DataCleaningAgent:
 
         return report
 
-    # =====================================================================
-    #  Private helpers
-    # =====================================================================
 
     def _validate_folder_structure(self) -> None:
         """
@@ -191,7 +149,6 @@ class DataCleaningAgent:
 
         logger.info("Folder structure validated successfully.")
 
-    # -----------------------------------------------------------------
 
     def _scan_and_filter(self) -> dict[str, list[Path]]:
         """
@@ -275,7 +232,6 @@ class DataCleaningAgent:
         )
         return valid_images
 
-    # -----------------------------------------------------------------
 
     def _remove_duplicates(
         self,
@@ -336,7 +292,7 @@ class DataCleaningAgent:
         )
         return unique_images
 
-    # -----------------------------------------------------------------
+
 
     def _save_cleaned_images(
         self,
@@ -406,7 +362,7 @@ class DataCleaningAgent:
         }
         return report
 
-    # -----------------------------------------------------------------
+
 
     def _save_report(self, report: dict) -> None:
         """
@@ -428,7 +384,6 @@ class DataCleaningAgent:
             logger.error(f"Failed to save cleaning report: {e}")
             raise
 
-    # -----------------------------------------------------------------
 
     def _log_summary(self, elapsed_seconds: float) -> None:
         """
@@ -453,10 +408,6 @@ class DataCleaningAgent:
         logger.info(f"  Execution time           : {elapsed_seconds:.2f}s")
         logger.info("-" * 50)
 
-
-# =========================================================================
-#  Entry point
-# =========================================================================
 
 if __name__ == "__main__":
     agent = DataCleaningAgent()

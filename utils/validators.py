@@ -1,10 +1,3 @@
-"""
-Utility module for validating extracted feature embeddings.
-
-Provides functions and classes to ensure feature integrity, correct
-dimensions, and absence of corrupted data (NaN, Inf) before model fine-tuning.
-"""
-
 from typing import Tuple
 
 import torch

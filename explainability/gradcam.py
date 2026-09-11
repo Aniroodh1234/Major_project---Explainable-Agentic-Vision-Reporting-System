@@ -1,10 +1,3 @@
-"""
-Grad-CAM generation module.
-
-Uses the pytorch-grad-cam library to generate a class activation map (CAM)
-for a given Vision Transformer model and image tensor.
-"""
-
 from typing import List
 
 import numpy as np

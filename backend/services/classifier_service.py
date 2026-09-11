@@ -1,11 +1,3 @@
-"""
-Classifier Service for Agent 6 (Inference).
-
-Provides a high-level API to process a single medical image, predict its
-class using the fine-tuned MedicalClassifierViT, and generate Grad-CAM
-explainability visualizations.
-"""
-
 import time
 import uuid
 from datetime import datetime, timezone

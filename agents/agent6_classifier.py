@@ -1,27 +1,10 @@
-"""
-Agent 6 – Medical Image Classification & Grad-CAM (Pipeline B).
-
-Acts as the primary Inference Agent. Accepts a raw user-uploaded medical image,
-uses the ClassifierService to predict the class, generates Explainable AI (Grad-CAM)
-visualizations, and outputs a structured prediction report for Agent 7.
-
-Usage (from the project root)::
-
-    python -m agents.agent6_classifier [path_to_image]
-
-If no image is provided, it will attempt to pick a random test image from
-the datasets directory to demonstrate the pipeline.
-"""
-
 import argparse
 import json
 import random
 import sys
 from pathlib import Path
 
-# ---------------------------------------------------------------------------
-# Ensure the project root is on sys.path
-# ---------------------------------------------------------------------------
+
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
@@ -109,9 +92,6 @@ class MedicalClassificationAgent:
         logger.info("-" * 50)
 
 
-# =========================================================================
-#  Entry point
-# =========================================================================
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Agent 6 - Medical Image Inference")

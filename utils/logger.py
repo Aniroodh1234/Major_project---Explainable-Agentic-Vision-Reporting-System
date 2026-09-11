@@ -1,10 +1,3 @@
-"""
-Centralized logging configuration for the Agentic AI project.
-
-Provides a reusable logger setup used by all agents and utility modules.
-Uses Python's built-in logging module instead of print() statements.
-"""
-
 import logging
 import sys
 from pathlib import Path

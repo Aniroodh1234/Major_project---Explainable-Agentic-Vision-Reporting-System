@@ -1,7 +1,3 @@
-"""
-Prompt Refiner module.
-"""
-
 from typing import Dict, Any, Optional
 
 class PromptRefiner:
