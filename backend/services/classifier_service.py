@@ -18,6 +18,25 @@ from preprocessing.preprocessing_pipeline import PreprocessingPipeline
 from utils.file_utils import ensure_directory_exists
 from utils.image_utils import load_image
 from utils.logger import setup_logger, print_step, print_substep
+from observability.metrics_registry import (
+    MODEL_LOADED,
+    INFERENCE_REQUESTS_TOTAL,
+    INFERENCE_DURATION_SECONDS,
+    PREPROCESSING_DURATION_SECONDS,
+    FORWARD_PASS_DURATION_SECONDS,
+    SOFTMAX_ENTROPY,
+    PREDICTIONS_TOTAL,
+    CONFIDENCE_SCORE,
+    CONFIDENCE_LATEST,
+    LOW_CONFIDENCE_TOTAL,
+    INPUT_IMAGE_SIZE,
+    GRADCAM_DURATION_SECONDS,
+    GRADCAM_ACTIVATION_MEAN,
+    GRADCAM_ACTIVATION_MAX,
+    GRADCAM_ACTIVE_REGION_RATIO,
+    GRADCAM_SPATIAL_CONCENTRATION,
+)
+from observability.model_inspector import inspect_vit_model
 
 logger = setup_logger(__name__)
 
@@ -42,6 +61,10 @@ class ClassifierService:
         
         # 3. Initialise Explainability tools
         self.grad_cam_generator = GradCAMGenerator(self.model)
+
+        # 4. Publish model metrics to Prometheus
+        MODEL_LOADED.set(1)
+        inspect_vit_model(self.model)
 
     def _load_model(self) -> None:
         """Load the fine-tuned weights into MedicalClassifierViT."""
@@ -89,6 +112,11 @@ class ClassifierService:
         
         if original_image is None:
             raise ValueError("Failed to decode the image. The file may be corrupted.")
+
+        # Record input image dimensions for Prometheus
+        _img_h, _img_w = original_image.shape[:2]
+        INPUT_IMAGE_SIZE.labels(dimension="height").observe(_img_h)
+        INPUT_IMAGE_SIZE.labels(dimension="width").observe(_img_w)
             
         # Keep a copy of original image in RGB (0-1 float) for visualization
         rgb_original = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
@@ -97,7 +125,9 @@ class ClassifierService:
         # 2. Preprocess (Reuse Agent 2 pipeline)
         print_step(2, "AI Vision Analysis", "Agent 6 is scanning the image for medical abnormalities...", color="\033[1;35m")
         # Returns shape (3, 224, 224)
+        _preprocess_start = time.time()
         input_tensor = self.pipeline.process(original_image)
+        PREPROCESSING_DURATION_SECONDS.observe(time.time() - _preprocess_start)
         logger.info(f"Image preprocessed to tensor shape: {input_tensor.shape}")
         print_substep("Converted image to numeric tensor (224x224 pixels) for the Neural Network.")
         
@@ -111,15 +141,26 @@ class ClassifierService:
             forward_start = time.time()
             logits = self.model(batch_tensor)
             forward_end = time.time()
-            logger.info(f"Forward pass completed in {round((forward_end - forward_start) * 1000, 2)}ms")
+            _forward_elapsed = forward_end - forward_start
+            FORWARD_PASS_DURATION_SECONDS.observe(_forward_elapsed)
+            logger.info(f"Forward pass completed in {round(_forward_elapsed * 1000, 2)}ms")
             logger.debug(f"Raw logits output: {logits.cpu().numpy().tolist()}")
             
             probabilities = torch.nn.functional.softmax(logits, dim=1)[0]
-            
+
+        # Record softmax entropy (lower = more decisive prediction)
+        _entropy = -torch.sum(probabilities * torch.log(probabilities + 1e-10)).item()
+        SOFTMAX_ENTROPY.observe(_entropy)
+
         confidence, predicted_idx = torch.max(probabilities, dim=0)
         confidence_val = confidence.item()
         predicted_class = self.class_names[predicted_idx.item()]
-        
+
+        # Record prediction metrics to Prometheus
+        PREDICTIONS_TOTAL.labels(predicted_class=predicted_class).inc()
+        CONFIDENCE_SCORE.observe(confidence_val)
+        CONFIDENCE_LATEST.set(confidence_val)
+
         logger.info(f"Predicted: {predicted_class} with confidence {confidence_val:.4f}")
         print_substep(f"AI Prediction: '{predicted_class}' with {round(confidence_val*100, 2)}% confidence!")
 
@@ -128,6 +169,7 @@ class ClassifierService:
         warning = None
         if confidence_val < CONFIDENCE_THRESHOLD:
             status = "LOW_CONFIDENCE"
+            LOW_CONFIDENCE_TOTAL.inc()
             warning = (
                 "The uploaded medical image does not closely match the disease patterns on "
                 "which this model was trained, or the model confidence is below the accepted "
@@ -145,6 +187,8 @@ class ClassifierService:
         print_substep("Saved X-Ray visualization with colored heatmap overlay.")
         
         elapsed = time.time() - start_time
+        INFERENCE_DURATION_SECONDS.observe(elapsed)
+        INFERENCE_REQUESTS_TOTAL.labels(status="success").inc()
 
         # 6. Prepare structured response
         response = {
@@ -169,8 +213,17 @@ class ClassifierService:
         try:
             logger.info("Initiating Explainability Pipeline (Heatmap Overlay)...")
             # Generate Raw Grad-CAM grayscale map
+            _gradcam_start = time.time()
             grayscale_cam = self.grad_cam_generator.generate(batch_tensor)
-            
+            GRADCAM_DURATION_SECONDS.observe(time.time() - _gradcam_start)
+
+            # Record Grad-CAM activation statistics for Prometheus
+            GRADCAM_ACTIVATION_MEAN.observe(float(grayscale_cam.mean()))
+            GRADCAM_ACTIVATION_MAX.set(float(grayscale_cam.max()))
+            _active_ratio = float((grayscale_cam > 0.5).sum() / grayscale_cam.size)
+            GRADCAM_ACTIVE_REGION_RATIO.observe(_active_ratio)
+            GRADCAM_SPATIAL_CONCENTRATION.observe(float(grayscale_cam.std()))
+
             # Colourise and Overlay
             heatmap_rgb = HeatmapGenerator.apply_colormap(grayscale_cam)
             overlay = HeatmapGenerator.overlay_heatmap(heatmap_rgb, original_image)

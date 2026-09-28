@@ -14,6 +14,11 @@ from preprocessing.tensor_conversion import TensorConverter
 from utils.file_utils import clear_directory, ensure_directory_exists, get_all_files_recursive
 from utils.logger import setup_logger
 from utils.validators import FeatureValidator
+from observability.training_server import start_training_metrics_server
+from observability.metrics_registry import (
+    FEATURE_VALIDATION_TOTAL,
+    DATASET_IMAGES_TOTAL,
+)
 
 logger = setup_logger(__name__, log_file="agent4_feature_selection.log")
 
@@ -74,6 +79,9 @@ class FeatureSelectionAgent:
 
         # Step 1 — Validate input exists
         self._validate_input()
+
+        # Start Prometheus metrics server for live pipeline observability
+        start_training_metrics_server(port=8001)
 
         # Step 2 — Prepare output directory (fresh start)
         clear_directory(self.selected_dir)
@@ -149,6 +157,7 @@ class FeatureSelectionAgent:
                     if not is_valid:
                         logger.warning(f"Validation failed for {file_path.name}: {error_msg}")
                         self._removed_embeddings += 1
+                        FEATURE_VALIDATION_TOTAL.labels(result="failed").inc()
                         
                         if "Invalid shape" in error_msg:
                             self._inconsistent_dimensions += 1
@@ -173,15 +182,18 @@ class FeatureSelectionAgent:
 
                     self._valid_embeddings += 1
                     class_valid_count += 1
+                    FEATURE_VALIDATION_TOTAL.labels(result="success").inc()
                     
                 except Exception as e:
                     logger.error(f"Error processing {file_path.name}: {e}")
                     self._removed_embeddings += 1
+                    FEATURE_VALIDATION_TOTAL.labels(result="failed").inc()
                     self._failed_files.append({
                         "file": str(file_path.relative_to(self.features_dir)),
                         "reason": f"Exception: {str(e)}"
                     })
 
+            DATASET_IMAGES_TOTAL.labels(stage="selected_features", class_name=class_name).set(class_valid_count)
             logger.info(
                 f"Class '{class_name}' done: {class_valid_count} valid feature(s) selected."
             )

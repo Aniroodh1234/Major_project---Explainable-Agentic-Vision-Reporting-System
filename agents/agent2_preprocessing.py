@@ -28,6 +28,12 @@ from utils.file_utils import (
 )
 from utils.image_utils import is_supported_format
 from utils.logger import setup_logger
+from observability.training_server import start_training_metrics_server
+from observability.metrics_registry import (
+    PREPROCESSING_IMAGES_TOTAL,
+    PREPROCESSING_THROUGHPUT,
+    DATASET_IMAGES_TOTAL,
+)
 
 logger = setup_logger(__name__, log_file="agent2_preprocessing.log")
 
@@ -76,6 +82,9 @@ class PreprocessingAgent:
 
         # Step 1 — Validate input
         self._validate_input()
+
+        # Start Prometheus metrics server for live data pipeline observability
+        start_training_metrics_server(port=8001)
 
         # Step 2 — Prepare output directory (fresh start)
         clear_directory(self.processed_dir)
@@ -151,6 +160,7 @@ class PreprocessingAgent:
                 tensor = self.pipeline.process_from_path(file_path)
                 if tensor is None:
                     self._failed += 1
+                    PREPROCESSING_IMAGES_TOTAL.labels(status="failed").inc()
                     self._failed_files.append(
                         str(file_path.relative_to(self.cleaned_dir))
                     )
@@ -163,14 +173,20 @@ class PreprocessingAgent:
 
                 self._successful += 1
                 class_count += 1
+                PREPROCESSING_IMAGES_TOTAL.labels(status="success").inc()
 
             self._class_distribution[class_name] = class_count
+            DATASET_IMAGES_TOTAL.labels(stage="processed", class_name=class_name).set(class_count)
             logger.info(
                 f"Class '{class_name}' done: {class_count} tensor(s) saved."
             )
 
     def _generate_report(self, elapsed_seconds: float) -> dict:
         """Build the preprocessing report dictionary."""
+        # Record average throughput to Prometheus
+        _throughput = self._total_images / max(elapsed_seconds, 0.001)
+        PREPROCESSING_THROUGHPUT.set(_throughput)
+        
         return {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "input_path": str(self.cleaned_dir),

@@ -15,6 +15,10 @@ from backend.services.classifier_service import ClassifierService
 from backend.services.report_service import ReportService
 from utils.logger import setup_logger, print_step, print_substep
 from utils.file_utils import ensure_directory_exists
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from starlette.responses import Response as StarletteResponse
+from observability.middleware import PrometheusMiddleware
+from observability.model_inspector import inspect_vit_model
 
 logger = setup_logger(__name__)
 
@@ -39,6 +43,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Prometheus Metrics Middleware — records HTTP latency, status, and throughput
+app.add_middleware(PrometheusMiddleware)
+
 # Global Service Instances
 # Loading models is expensive, so we instantiate them once at app startup
 classifier_service = None
@@ -57,6 +64,10 @@ def startup_event():
     ensure_directory_exists(UPLOADS_DIR)
     ensure_directory_exists(HEATMAPS_DIR)
     ensure_directory_exists(REPORTS_DIR)
+
+    # Publish ViT model architecture metrics to Prometheus
+    inspect_vit_model(classifier_service.model)
+
     logger.info("FastAPI backend started successfully.")
 
 
@@ -87,6 +98,15 @@ def _cleanup_directory(directory: Path):
 def health_check():
     """Simple endpoint to verify the API is running."""
     return {"status": "ok", "message": "Medical API is running."}
+
+
+@app.get("/metrics")
+def prometheus_metrics():
+    """Prometheus metrics scraping endpoint."""
+    return StarletteResponse(
+        content=generate_latest(),
+        media_type=CONTENT_TYPE_LATEST,
+    )
 
 
 @app.post("/api/v1/analyze")

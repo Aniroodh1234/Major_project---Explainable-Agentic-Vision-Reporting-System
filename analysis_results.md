@@ -8,7 +8,7 @@
 
 ### System Overview
 
-**MedVision AI** is a production-grade, end-to-end **Multi-Agent Agentic AI System** for medical image analysis. It chains **8 specialized AI agents** across two phases — a Training Pipeline and an Inference & Audit Pipeline — to deliver explainable, hallucination-free clinical reports from raw medical scans.
+**MedVision AI** is a production-grade, end-to-end **Multi-Agent Agentic AI System** for medical image analysis. It chains **5 specialized AI agents** across two phases — a Training Pipeline and an Inference & Audit Pipeline — to deliver explainable, hallucination-free clinical reports from raw medical scans.
 
 ### Architecture Breakdown
 
@@ -16,12 +16,12 @@
 |-------|-------|------|----------------|
 | **Training** | Agent 1 — Data Cleaner | Validates, deduplicates (dHash), removes corrupted images | OpenCV, perceptual hashing |
 | **Training** | Agent 2 — Preprocessor | Resizes to 224×224, normalizes (ImageNet stats), augments | torchvision transforms |
-| **Training** | Agent 3 — Feature Extractor | Extracts 768-dim embeddings via ViT-B/16 backbone | PyTorch `vit_b_16` |
-| **Training** | Agent 4 — Feature Selector | Validates tensor integrity (NaN/Inf/dimension checks) | Custom validators |
-| **Training** | Agent 5 — Trainer | Fine-tunes ViT with AdamW, ReduceLROnPlateau, early stopping | PyTorch training loop |
-| **Inference** | Agent 6 — Classifier + Grad-CAM | Runs inference, generates 4-panel XAI visualization | pytorch-grad-cam |
-| **Inference** | Agent 7 — Report Drafter | LLM-generated structured JSON clinical report | LangChain + Groq API |
-| **Inference** | Agent 8 — LLM Judge | Scores report on 10-point clinical checklist; self-correction loop | LLM-as-a-Judge pattern |
+| **Training** | Agent 3(i) — Feature Extractor | Extracts 768-dim embeddings via ViT-B/16 backbone | PyTorch `vit_b_16` |
+| **Training** | Agent 3(ii) — Feature Selector | Validates tensor integrity (NaN/Inf/dimension checks) | Custom validators |
+| **Training** | Agent 3(iii) — Trainer | Fine-tunes ViT with AdamW, ReduceLROnPlateau, early stopping | PyTorch training loop |
+| **Inference** | Agent 4 — Classifier + Grad-CAM | Runs inference, generates 4-panel XAI visualization | pytorch-grad-cam |
+| **Inference** | Agent 5 — Report Drafter | LLM-generated structured JSON clinical report | LangChain + Groq API |
+| **Inference** | Agent 6 — LLM Judge | Scores report on 10-point clinical checklist; self-correction loop | LLM-as-a-Judge pattern |
 
 ### Key Technical Details
 

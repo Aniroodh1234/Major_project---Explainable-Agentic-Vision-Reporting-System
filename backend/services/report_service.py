@@ -5,6 +5,15 @@ from llm.llm_client import LLMClient
 from llm.report_generator import ReportGenerator
 from llm.response_formatter import ResponseFormatter
 from utils.logger import setup_logger, print_step, print_substep
+from observability.metrics_registry import (
+    REPORT_GENERATION_DURATION_SECONDS,
+    EVALUATION_SCORE_PERCENT,
+    EVALUATION_SCORE_LATEST,
+    EVALUATION_ITERATIONS,
+    EVALUATION_CRITERION_SCORE,
+    EVALUATION_PASSED_TOTAL,
+    EVALUATION_FAILED_TOTAL,
+)
 
 logger = setup_logger(__name__)
 
@@ -53,6 +62,20 @@ class ReportService:
         # 5. Compile final output object as per Prompt 8 requirements
         generation_time = round(time.time() - start_time, 3)
         logger.info(f"Report generation and evaluation completed in {generation_time}s.")
+
+        # Record report generation + evaluation metrics to Prometheus
+        REPORT_GENERATION_DURATION_SECONDS.observe(generation_time)
+        EVALUATION_SCORE_PERCENT.observe(metrics.percentage_score)
+        EVALUATION_SCORE_LATEST.set(metrics.percentage_score)
+        EVALUATION_ITERATIONS.observe(metrics.iteration_number)
+        for _criterion in metrics.criterion_scores:
+            EVALUATION_CRITERION_SCORE.labels(
+                criterion_id=_criterion.get("id", "unknown")
+            ).set(_criterion.get("score", 0))
+        if metrics.validation_status == "VALIDATED":
+            EVALUATION_PASSED_TOTAL.inc()
+        else:
+            EVALUATION_FAILED_TOTAL.inc()
 
         # Save evaluation report metadata to disk
         from config.settings import PROJECT_ROOT

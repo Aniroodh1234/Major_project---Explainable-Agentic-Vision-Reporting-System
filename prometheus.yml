@@ -1,0 +1,36 @@
+# ═══════════════════════════════════════════════════════════════════
+#  MedVision AI — Prometheus Configuration
+# ═══════════════════════════════════════════════════════════════════
+#
+#  Usage:
+#    prometheus --config.file=prometheus.yml
+#
+#  Two scrape jobs are configured:
+#    1. medvision-inference  → FastAPI backend (always running)
+#    2. medvision-training   → Batch training scripts (running only
+#       while agents 1-5 execute)
+#
+#  Open http://localhost:9090 for the Prometheus Web UI after starting.
+# ═══════════════════════════════════════════════════════════════════
+
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  # ── FastAPI Backend (Inference Pipeline) ────────────────────────
+  - job_name: "medvision-inference"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["localhost:8000"]
+        labels:
+          pipeline: "inference"
+
+  # ── Batch Training Pipeline ────────────────────────────────────
+  - job_name: "medvision-training"
+    metrics_path: "/metrics"
+    scrape_interval: 2s          # faster scraping during training
+    static_configs:
+      - targets: ["localhost:8001"]
+        labels:
+          pipeline: "training"

@@ -25,3 +25,6 @@ pydantic==2.10.6
 # Utilities
 python-dotenv==1.0.1
 gdown==5.1.0
+
+# Observability
+prometheus_client==0.21.1

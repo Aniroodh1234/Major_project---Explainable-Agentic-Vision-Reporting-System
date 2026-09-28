@@ -14,6 +14,15 @@ from models.model_loader import ViTFeatureExtractor
 from preprocessing.tensor_conversion import TensorConverter
 from utils.file_utils import clear_directory, ensure_directory_exists, get_all_files_recursive
 from utils.logger import setup_logger
+from observability.training_server import start_training_metrics_server
+from observability.metrics_registry import (
+    FEATURES_EXTRACTED_TOTAL,
+    FEATURE_EXTRACTION_DURATION_SECONDS,
+    FEATURE_VECTOR_L2_NORM,
+    FEATURE_VECTOR_MEAN,
+    FEATURE_VECTOR_SPARSITY,
+    DATASET_IMAGES_TOTAL,
+)
 
 logger = setup_logger(__name__, log_file="agent3_feature_extraction.log")
 
@@ -60,6 +69,9 @@ class FeatureExtractionAgent:
 
         # Step 1 — Validate input
         self._validate_input()
+
+        # Start Prometheus metrics server for live feature extraction observability
+        start_training_metrics_server(port=8001)
 
         # Step 2 — Prepare output directory (fresh start)
         clear_directory(self.features_dir)
@@ -138,10 +150,19 @@ class FeatureExtractionAgent:
 
                     # 2. Pass through the feature extractor
                     # Feature shape will be (1, FEATURE_DIM)
+                    _extract_start = time.time()
                     feature_embedding = self.extractor.extract_features(img_tensor)
+                    FEATURE_EXTRACTION_DURATION_SECONDS.observe(time.time() - _extract_start)
 
                     # Detach from graph and move back to CPU before saving
                     feature_embedding = feature_embedding.detach().cpu()
+
+                    # Record feature vector statistics for Prometheus
+                    _flat = feature_embedding.flatten()
+                    FEATURE_VECTOR_L2_NORM.observe(float(_flat.norm(2).item()))
+                    FEATURE_VECTOR_MEAN.observe(float(_flat.mean().item()))
+                    _sparsity = float((_flat.abs() < 0.01).sum().item() / _flat.numel())
+                    FEATURE_VECTOR_SPARSITY.observe(_sparsity)
 
                     # 3. Save as .pt file in the features directory
                     output_name = file_path.name
@@ -157,6 +178,7 @@ class FeatureExtractionAgent:
 
                     self._successful += 1
                     class_count += 1
+                    FEATURES_EXTRACTED_TOTAL.labels(class_name=class_name).inc()
                     
                 except Exception as e:
                     logger.error(f"Failed to process {file_path.name}: {e}")

@@ -28,6 +28,12 @@ from utils.file_utils import (
 )
 from utils.image_utils import compute_image_hash, is_supported_format, is_valid_image
 from utils.logger import setup_logger
+from observability.training_server import start_training_metrics_server
+from observability.metrics_registry import (
+    DATASET_IMAGES_TOTAL,
+    DATASET_CORRUPTED_TOTAL,
+    DATASET_DUPLICATES_REMOVED_TOTAL,
+)
 
 logger = setup_logger(__name__, log_file="agent1_data_cleaning.log")
 
@@ -81,6 +87,9 @@ class DataCleaningAgent:
         # Step 1 — Validate folder structure
         self._validate_folder_structure()
 
+        # Start Prometheus metrics server for live data pipeline observability
+        start_training_metrics_server(port=8001)
+
         # Step 2 — Prepare output directory (fresh start)
         clear_directory(self.cleaned_dir)
 
@@ -99,6 +108,7 @@ class DataCleaningAgent:
         )
         for class_name, imgs in unique_images_by_class.items():
             self._class_distribution[class_name] = len(imgs)
+            DATASET_IMAGES_TOTAL.labels(stage="cleaned", class_name=class_name).set(len(imgs))
 
         elapsed = time.time() - start_time
 
@@ -210,6 +220,7 @@ class DataCleaningAgent:
                 # 3. Can OpenCV actually read it?
                 if not is_valid_image(file_path):
                     self._corrupted_images += 1
+                    DATASET_CORRUPTED_TOTAL.inc()
                     self._corrupted_files_list.append(
                         str(file_path.relative_to(self.raw_dir))
                     )
@@ -273,6 +284,7 @@ class DataCleaningAgent:
                 if img_hash in seen_hashes:
                     # Duplicate found.
                     self._duplicate_images_removed += 1
+                    DATASET_DUPLICATES_REMOVED_TOTAL.inc()
                     self._duplicate_files_removed_list.append(
                         str(file_path.relative_to(self.raw_dir))
                     )

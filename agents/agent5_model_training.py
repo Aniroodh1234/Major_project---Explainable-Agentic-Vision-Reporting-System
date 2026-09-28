@@ -35,6 +35,21 @@ from models.model_loader import MedicalClassifierViT
 from preprocessing.tensor_conversion import TensorConverter
 from utils.file_utils import ensure_directory_exists, get_all_files_recursive
 from utils.logger import setup_logger
+from observability.training_server import start_training_metrics_server
+from observability.metrics_registry import (
+    TRAINING_EPOCH_CURRENT,
+    TRAINING_EPOCH_TOTAL,
+    TRAINING_LOSS,
+    TRAINING_ACCURACY,
+    TRAINING_LEARNING_RATE,
+    TRAINING_BEST_VAL_ACCURACY,
+    TRAINING_EPOCH_DURATION_SECONDS,
+    TRAINING_BATCH_DURATION_SECONDS,
+    TRAINING_GRADIENT_NORM,
+    TRAINING_DATASET_SIZE,
+    TRAINING_EARLY_STOPPING_COUNTER,
+    MODEL_PARAMETERS,
+)
 
 logger = setup_logger(__name__, log_file="agent5_model_training.log")
 
@@ -102,6 +117,10 @@ class VisionTrainingAgent:
         # Step 1: Detect classes and validate input
         self._detect_classes()
         self._validate_consistency()
+
+        # Start Prometheus metrics server for live training observability
+        start_training_metrics_server(port=8001)
+        TRAINING_EPOCH_TOTAL.set(NUM_EPOCHS)
         
         # Step 2: Prepare datasets and dataloaders
         train_loader, val_loader, test_loader = self._prepare_dataloaders()
@@ -192,6 +211,12 @@ class VisionTrainingAgent:
         test_loader = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=False)
         
         logger.info(f"Dataset Split -> Train: {train_len}, Val: {val_len}, Test: {test_len}")
+
+        # Record dataset split sizes to Prometheus
+        TRAINING_DATASET_SIZE.labels(split="train").set(train_len)
+        TRAINING_DATASET_SIZE.labels(split="validation").set(val_len)
+        TRAINING_DATASET_SIZE.labels(split="test").set(test_len)
+
         return train_loader, val_loader, test_loader
 
     def _train_loop(
@@ -203,8 +228,16 @@ class VisionTrainingAgent:
         
         best_val_acc = 0.0
         epochs_no_improve = 0
-        
+
+        # Record total model parameters at training start
+        _total_params = sum(p.numel() for p in model.parameters())
+        _trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        MODEL_PARAMETERS.labels(component="total", trainable="all").set(_total_params)
+        MODEL_PARAMETERS.labels(component="total", trainable="yes").set(_trainable)
+
         for epoch in range(1, NUM_EPOCHS + 1):
+            _epoch_start = time.time()
+            TRAINING_EPOCH_CURRENT.set(epoch)
             logger.info(f"Epoch {epoch}/{NUM_EPOCHS}")
             
             # --- Training Phase ---
@@ -212,6 +245,7 @@ class VisionTrainingAgent:
             running_loss, correct, total = 0.0, 0, 0
             
             for inputs, labels in train_loader:
+                _batch_start = time.time()
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
                 
                 optimizer.zero_grad()
@@ -219,7 +253,25 @@ class VisionTrainingAgent:
                 loss = criterion(outputs, labels)
                 
                 loss.backward()
+
+                # Record gradient norms for ViT observability
+                _grad_norm_encoder = 0.0
+                _grad_norm_classifier = 0.0
+                for name, p in model.named_parameters():
+                    if p.grad is not None:
+                        _pnorm = p.grad.data.norm(2).item()
+                        if "feature_extractor" in name:
+                            _grad_norm_encoder += _pnorm ** 2
+                        elif "classifier" in name:
+                            _grad_norm_classifier += _pnorm ** 2
+                TRAINING_GRADIENT_NORM.labels(component="encoder").set(_grad_norm_encoder ** 0.5)
+                TRAINING_GRADIENT_NORM.labels(component="classifier").set(_grad_norm_classifier ** 0.5)
+                TRAINING_GRADIENT_NORM.labels(component="overall").set(
+                    (_grad_norm_encoder + _grad_norm_classifier) ** 0.5
+                )
+
                 optimizer.step()
+                TRAINING_BATCH_DURATION_SECONDS.labels(phase="train").observe(time.time() - _batch_start)
                 
                 running_loss += loss.item() * inputs.size(0)
                 _, predicted = torch.max(outputs, 1)
@@ -234,6 +286,7 @@ class VisionTrainingAgent:
             val_loss, val_correct, val_total = 0.0, 0, 0
             with torch.no_grad():
                 for inputs, labels in val_loader:
+                    _batch_start = time.time()
                     inputs, labels = inputs.to(self.device), labels.to(self.device)
                     outputs = model(inputs)
                     loss = criterion(outputs, labels)
@@ -242,6 +295,7 @@ class VisionTrainingAgent:
                     _, predicted = torch.max(outputs, 1)
                     val_total += labels.size(0)
                     val_correct += (predicted == labels).sum().item()
+                    TRAINING_BATCH_DURATION_SECONDS.labels(phase="validation").observe(time.time() - _batch_start)
                     
             val_loss = val_loss / val_total
             val_acc = val_correct / val_total
@@ -251,6 +305,15 @@ class VisionTrainingAgent:
             self.history["val_loss"].append(val_loss)
             self.history["train_acc"].append(train_acc)
             self.history["val_acc"].append(val_acc)
+
+            # Publish epoch metrics to Prometheus
+            TRAINING_LOSS.labels(phase="train").set(train_loss)
+            TRAINING_LOSS.labels(phase="validation").set(val_loss)
+            TRAINING_ACCURACY.labels(phase="train").set(train_acc)
+            TRAINING_ACCURACY.labels(phase="validation").set(val_acc)
+            _current_lr = optimizer.param_groups[0]["lr"]
+            TRAINING_LEARNING_RATE.set(_current_lr)
+            TRAINING_EPOCH_DURATION_SECONDS.observe(time.time() - _epoch_start)
             
             logger.info(f"  Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.4f}")
             logger.info(f"  Val Loss  : {val_loss:.4f} | Val Acc  : {val_acc:.4f}")
@@ -262,6 +325,7 @@ class VisionTrainingAgent:
             if val_acc > best_val_acc:
                 best_val_acc = val_acc
                 epochs_no_improve = 0
+                TRAINING_BEST_VAL_ACCURACY.set(best_val_acc)
                 logger.info(f"  >> Validation accuracy improved! Saving best model.")
                 # Save checkpoint and the final trained model
                 torch.save(model.state_dict(), FINAL_MODEL_PATH)
@@ -269,6 +333,7 @@ class VisionTrainingAgent:
                 torch.save(model.state_dict(), chkpt_path)
             else:
                 epochs_no_improve += 1
+                TRAINING_EARLY_STOPPING_COUNTER.set(epochs_no_improve)
                 if epochs_no_improve >= PATIENCE:
                     logger.warning(f"Early stopping triggered after {epoch} epochs.")
                     break
